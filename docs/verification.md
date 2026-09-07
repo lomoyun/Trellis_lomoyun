@@ -64,3 +64,13 @@ GitNexus source indexes were refreshed for review. Its FTS extension is unavaila
 on this Windows installation and process enumeration reports limited coverage.
 The graph is supplementary impact evidence, not a complete safety certificate;
 the implementation was also inspected directly and tested end to end.
+
+## Delivery
+
+Implementation commit: 21267235682551fcae0b44ec15ed1f2168967540.
+Pushed to the requested personal origin main; confirmed by git ls-remote.
+The final staged graph check reported CRITICAL for the whole-runtime replacement:
+461 changed indexed symbols and 20 affected indexed processes. This is not a
+low-risk patch or a complete enumeration of removed upstream files. The local
+session/policy/transaction state is excluded from Git; licensing copies match.
+Task completion and handoff are recorded in a following documentation-only commit.

@@ -15,7 +15,7 @@ user intent. No automated push in the product.
 - [x] Implement reversible legacy migration and managed template updates.
 - [x] Remove old runtime, templates and publishing workflows from active tree.
 - [x] Run final lint, typecheck, tests and packed CLI smoke checks after review fixes.
-- [ ] Push verified changes to the explicitly requested personal remote.
+- [x] Push verified changes to the explicitly requested personal remote.
 
 ## Repository bootstrap delivery
 
