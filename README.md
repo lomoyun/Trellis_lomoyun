@@ -1,168 +1,148 @@
-<p align="center">
-<picture>
-<source srcset="assets/trellis.png" media="(prefers-color-scheme: dark)">
-<source srcset="assets/trellis.png" media="(prefers-color-scheme: light)">
-<img src="assets/trellis.png" alt="Trellis Logo" width="500" style="image-rendering: -webkit-optimize-contrast; image-rendering: crisp-edges;">
-</picture>
-</p>
+# Trellis Lite
 
-<p align="center">
-<strong>An out-of-the-box engineering framework for AI coding.</strong><br/>
-<sub>AI writes code fast, but every session it starts from scratch — no memory of your project, your conventions, or your team's requirements. Trellis persists specs, tasks, and memory into your repo, so any coding agent works to your engineering standards.</sub>
-</p>
+保留 Task / PRD / Plan / Trace 的轻量协作层。适用于跨 coding agent、
+跨设备、跨人员接续工作；Git 是共享载体，不是后台同步服务。
 
-<p align="center">
-<a href="./README_CN.md">简体中文</a> •
-<a href="https://docs.trytrellis.app/">Docs</a> •
-<a href="https://docs.trytrellis.app/start/install-and-first-task">Quick Start</a> •
-<a href="https://docs.trytrellis.app/advanced/multi-platform">Supported Platforms</a> •
-<a href="https://docs.trytrellis.app/start/real-world-scenarios">Use Cases</a>
-</p>
+原版基线与版权见 [UPSTREAM.md](UPSTREAM.md)、[LICENSE](LICENSE)、
+[COPYRIGHT](COPYRIGHT)。这是独立且不兼容旧命令的 fork，不覆盖原版 trellis。
 
-<p align="center">
-<a href="https://www.npmjs.com/package/@mindfoldhq/trellis"><img src="https://img.shields.io/npm/v/@mindfoldhq/trellis.svg?style=flat-square&color=2563eb" alt="npm version" /></a>
-<a href="https://www.npmjs.com/package/@mindfoldhq/trellis"><img src="https://img.shields.io/npm/dw/@mindfoldhq/trellis?style=flat-square&color=cb3837&label=downloads" alt="npm downloads" /></a>
-<a href="https://github.com/mindfold-ai/Trellis/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-AGPL--3.0-16a34a.svg?style=flat-square" alt="license" /></a>
-<a href="https://github.com/mindfold-ai/Trellis/stargazers"><img src="https://img.shields.io/github/stars/mindfold-ai/Trellis?style=flat-square&color=eab308" alt="stars" /></a>
-<a href="https://docs.trytrellis.app/"><img src="https://img.shields.io/badge/docs-trytrellis.app-0f766e?style=flat-square" alt="docs" /></a>
-<a href="https://discord.com/invite/tWcCZ3aRHc"><img src="https://img.shields.io/badge/Discord-Join-5865F2?style=flat-square&logo=discord&logoColor=white" alt="Discord" /></a>
-<a href="https://github.com/mindfold-ai/Trellis/issues"><img src="https://img.shields.io/github/issues/mindfold-ai/Trellis?style=flat-square&color=e67e22" alt="open issues" /></a>
-<a href="https://github.com/mindfold-ai/Trellis/pulls"><img src="https://img.shields.io/github/issues-pr/mindfold-ai/Trellis?style=flat-square&color=9b59b6" alt="open PRs" /></a>
-<a href="https://deepwiki.com/mindfold-ai/Trellis"><img src="https://img.shields.io/badge/Ask-DeepWiki-blue?style=flat-square" alt="Ask DeepWiki" /></a>
-<a href="https://chatgpt.com/?q=Explain+the+project+mindfold-ai/Trellis+on+GitHub"><img src="https://img.shields.io/badge/Ask-ChatGPT-74aa9c?style=flat-square&logo=openai&logoColor=white" alt="Ask ChatGPT" /></a>
-</p>
+## 使用
 
-<p align="center">
-<img src="assets/trellis-demo.gif" alt="Trellis workflow demo" width="100%">
-</p>
+需要 Node.js 20+、Git。开发安装需要 pnpm 10。
 
-## Why Trellis?
-
-| Capability | What it changes |
-| --- | --- |
-| **Auto-injected specs** | Write conventions once in `.trellis/spec/`, then let Trellis inject the relevant context into each session instead of repeating yourself. |
-| **Task-centered workflow** | Keep PRDs, implementation context, review context, and task status in `.trellis/tasks/` so AI work stays structured. |
-| **Project memory** | Journals in `.trellis/workspace/` preserve what happened last time, so each new session starts with real context. |
-| **Team-shared standards** | Specs live in the repo, so one person's hard-won workflow or rule can benefit the whole team. |
-| **Multi-platform setup** | Bring the same Trellis structure to 22 AI coding platforms instead of rebuilding your workflow per tool. |
-
-## Prerequisites:
-
-- **Node.js** >= 18
-- **Python** >= 3.9
-
-## Quick Start
-
-```bash
-# 1. Install Trellis
-npm install -g @mindfoldhq/trellis@latest
-
-# 2. Initialize in your repo
-trellis init -u your-name
-
-# 3. Or initialize with the platforms you actually use
-trellis init --cursor --opencode --codex -u your-name
+```powershell
+pnpm install
+pnpm build
+pnpm tll --help
+node packages/cli/bin/tll.js --help
+node packages/cli/bin/tll.js --root E:/your/project init --platforms codex
 ```
 
-See the [Quick Start](https://docs.trytrellis.app/start/install-and-first-task) and [Supported Platforms](https://docs.trytrellis.app/advanced/multi-platform) guides for setup details.
+安装命令别名后可使用 tll 或 trellis-lite。init 默认不安装 hooks；
+加 --hooks 才为 Codex / Claude / Cursor 注册 session-start 入口，宿主还需批准。
+其他平台使用共享 AGENTS.md 和手动 context；平台列表不代表全部宿主实测通过。
 
-## How to Use
+```text
+tll init
+tll task new "实现登录" --id login
+tll task show login
+tll --actor alice --platform codex session new
+tll --session <uuid> task start login --expect <revision>
+tll --session <uuid> context --json
+tll task update login --expect <revision> --plan confirmed-plan.md
+tll checkpoint login --session <uuid> --input checkpoint.json
+tll handoff login --session <uuid> --input handoff.json
+tll task finish login --session <uuid> --input finish.json
+```
 
-The workflow is simple:
+每次 show/update/start 返回最新 revision。update、expand 和 checkpoint
+使用这个 revision 检查并发修改；冲突时先重读、合并，不强制覆盖。
+JSON 输入文件路径相对命令当前目录；--root 指定项目，不改变输入文件解析目录。
 
-1. **Describe what you want** in natural language.
-2. **Brainstorm** with the AI one question at a time until the PRD is clear, then implementation begins.
-3. **Let it run** — the AI calls Trellis Implement and auto-checks the result against specs, lint, type-check, and tests.
-4. **Type `/trellis:finish-work`** when the work is done or the session context fills up. Trellis archives the task and updates journals.
+## 任务和追溯
 
-## How It Works
+```text
+.trellis/
+  config.yaml
+  project.md
+  tasks/<id>/
+    task.md                  # quick: 元数据 + PRD + Plan
+    trace/<session>.jsonl     # 每会话一个文件
+  spec/                      # 可选项目知识
+  workspace/<actor>/<session>/  # handoff
+  .local/                    # Git 忽略：会话、授权、恢复日志
+```
 
-Trellis runs a 4-phase loop with auto-invoked skills and sub-agents:
+quick 保留 YAML frontmatter 和 <!-- tll:plan --> 分隔标记。
+PRD 至少说明目标、边界、验收；Plan 使用稳定步骤编号，例如 S1、S2。
+不强制分阶段思考、子代理、每轮检查或独立设计文档。
 
-1. **Plan** — `trellis-brainstorm` walks through requirements one question at a time and writes `prd.md`. Research-heavy items go to a `trellis-research` sub-agent. The result is curated specs + research files referenced from `implement.jsonl` / `check.jsonl`.
-2. **Implement** — a `trellis-implement` sub-agent writes code from the PRD with the curated context auto-injected, no git commit.
-3. **Verify** — a `trellis-check` sub-agent reviews the diff against specs and runs lint, type-check, and tests, self-fixing where it can.
-4. **Finish** — a final check runs, then `trellis-update-spec` promotes new learnings back into `.trellis/spec/` so the next session starts smarter.
+显式执行 tll task expand <id> --expect <revision> 后，标准任务分为
+task.json、prd.md、plan.md；ID、目录、附件和 Trace 不变，不按文件大小自动升级。
 
-## Resources
+checkpoint.json 示例：
 
-| Need                            | Link                                                                           |
-| ------------------------------- | ------------------------------------------------------------------------------ |
-| Install Trellis in a repo       | [Quick Start](https://docs.trytrellis.app/start/install-and-first-task)        |
-| Understand platform differences | [Supported Platforms](https://docs.trytrellis.app/advanced/multi-platform)     |
-| See the workflow in practice    | [Real-World Scenarios](https://docs.trytrellis.app/start/real-world-scenarios) |
-| Start from spec templates       | [Spec Templates](https://docs.trytrellis.app/templates/specs-index)            |
-| Track releases                  | [Changelog](https://docs.trytrellis.app/changelog)                             |
+```json
+{
+  "schemaVersion": 1,
+  "key": "login-milestone-1",
+  "type": "checkpoint",
+  "summary": "已实现接口；集成验证待执行",
+  "expectedRevision": "<show 返回的 revision>",
+  "evidence": {
+    "source": "reported",
+    "command": "pnpm test",
+    "result": "not-run"
+  }
+}
+```
 
-## FAQ
+事件类型：checkpoint、decision、milestone、block、verify、handoff、done、
+native-goal。同一 key 的相同请求返回原事件，不重复写入；不同请求复用 key 被拒绝。
+finish 标记 done，但不会伪造测试通过。记录不等于已 commit，commit 不等于已 push。
+手动编辑在下个 checkpoint 生成完整快照，不承诺逐次编辑历史。
+跨会话时间戳仅用于显示，不能推断因果；同一会话按 seq 排序。
 
-<details>
-<summary><strong>How is Trellis different from <code>CLAUDE.md</code>, <code>AGENTS.md</code>, or <code>.cursorrules</code>?</strong></summary>
+## 原生 plan / goal
 
-Those files are useful entry points, but they tend to become monolithic. Trellis adds scoped specs, task PRDs, workflow gates, workspace memory, and platform-aware generated files around them.
+原生 plan 是当前执行界面，Trellis Plan 是可携带的持久记录，不重复规划。
+只读阶段不创建任务、会话或检查点；恢复写模式后导入确认过的 Plan 原文。
+可用 --read-only 或 TLL_READ_ONLY=1 显式防止 CLI 写入；宿主模式仍由主代理遵守。
 
-</details>
+只在用户明确要求时由主代理调用宿主 goal 工具。Trellis 不模拟 slash 命令，
+不扫描宿主对话库、不自动创建目标，也不覆盖已有目标。
+原生目标完成只记 native-goal 事件，不自动关闭 Task。tll native --input
+可返回机器可读适配建议，不执行宿主工具。
 
-<details>
-<summary><strong>Is Trellis only for Claude Code?</strong></summary>
+## 自动提交（默认关闭）
 
-No. Trellis is a project layer that works across multiple coding agents and IDEs.
+共享 config 不构成许可。只有用户主动授权本机 Git 身份后才允许提交：
 
-</details>
+```text
+tll --session <uuid> policy grant --scope records --duration session --ack allow-local-commits
+tll policy show
+tll policy revoke
+```
 
-<details>
-<summary><strong>Is Trellis for solo developers or teams?</strong></summary>
+scope 为 records 或 task；duration 为 session、task（加 --task <id>）或 repo-user。
+只在 checkpoint / handoff / finish 时尝试，不在读取或对话回调时提交。
+records 仅提交当前任务文档、当前会话 Trace 和本次 handoff。
+task 还可提交 start --files 预先归属、且 checkpoint --files 再次显式指定的代码。
+起始已脏文件、无法确认归属、已有暂存修改或冲突会跳过提交，记录仍保留。
+同一文件开始后被其他工具修改无法可靠识别作者；不要给共享编辑文件授权自动提交。
+Git hooks 正常运行；失败保留记录及本次暂存内容，可用同一 checkpoint key 重试。
+产品没有自动 push 功能。
 
-Both. Solo developers use it for memory and repeatable workflow. Teams get the larger benefit: shared standards, task boundaries, reviewable context, and platform portability.
+## 升级、迁移与恢复
 
-</details>
+```text
+tll update --dry-run
+tll migrate --dry-run
+tll migrate --apply
+tll recover <transaction-id>
+tll recover <transaction-id> --rollback
+```
 
-<details>
-<summary><strong>Do I have to write every spec file manually?</strong></summary>
+迁移保留 PRD、implement.md、附件、研究、spec、workspace 和 archive。
+活动旧任务转 standard，未知字段及原记录保留；不同 plan.md 与 implement.md
+会报冲突。旧自动提交配置不会成为新授权。
+仅删除归属哈希匹配的旧运行时文件；自定义或不确定的文件保留并报告。
+迁移后先审查剩余旧 hooks/skills，运行 init 安装轻入口，再提交。
+恢复使用 .local/transactions 的 before/after 日志；后续编辑冲突时拒绝覆盖。
+崩溃遗留锁不会按超时强行抢占，先核实对应进程结束，再处理指定锁文件。
 
-No. Many teams start by letting AI draft specs from existing code and then tighten the important parts by hand. Trellis works best when you keep the high-signal rules explicit and versioned.
+## 验证和边界
 
-</details>
+```text
+pnpm lint
+pnpm typecheck
+pnpm test
+```
 
-<details>
-<summary><strong>Can teams use this without constant conflicts?</strong></summary>
-
-Yes. Personal workspace journals stay separate per developer, while shared specs and tasks stay in the repo where they can be reviewed and improved like any other project artifact.
-
-</details>
-
-<details>
-<summary><strong>Can I temporarily compare a project with and without Trellis?</strong></summary>
-
-Yes. `trellis ablate` temporarily removes all supported project-owned Trellis
-surfaces after creating a verified recovery transaction outside the project.
-Start a fresh agent session for the comparison, then run `trellis restore` to
-recover the exact prior state. Use `--dry-run` to preview either operation.
-The private recovery transaction includes exact `.trellis` task, spec, and
-workspace bytes, which may contain user-authored sensitive text, and is kept
-until restore verifies successfully.
-
-This is different from `trellis uninstall` (permanent removal) and
-`TRELLIS_HOOKS=0` (hooks only). Ablation does not launch agents, manage
-worktrees, hide Git changes, or remove the global CLI, channel logs, or host
-transcripts. If a managed path changes while ablated, restore refuses all
-writes until the conflict is resolved.
-
-</details>
-
-## Star History
-
-[![Star History Chart](https://star-history.dera.page/svg?repos=mindfold-ai/Trellis&type=Date)](https://star-history.dera.page/#mindfold-ai/Trellis&Date)
-
-## Community & Resources
-
-- [Official Docs](https://docs.trytrellis.app/)
-- [GitHub Issues](https://github.com/mindfold-ai/Trellis/issues)
-- [Discord](https://discord.com/invite/tWcCZ3aRHc)
-- [Tech Blog](https://docs.trytrellis.app/blog)
-
-<p align="center">
-<a href="https://github.com/mindfold-ai/Trellis">Official Repository</a> •
-<a href="https://github.com/mindfold-ai/Trellis/blob/main/LICENSE">AGPL-3.0 License</a> •
-Built by <a href="https://github.com/mindfold-ai">Mindfold</a>
-</p>
+两个包均为 private，未配置公开发布。模板与 core 使用同一实现源。
+本地开发直接使用 pnpm tll。若安装打包产物，需将 CLI 的 core 依赖映射到
+配套 core tar 包或自己的私有 registry；pnpm smoke:pack 验证了这条安装路径。
+默认初始化最多 5 个共享文件，每平台额外不超过 4 个，通用模板不超过 30 KiB。
+context 默认预算 16 KiB；超限时提供完整文件引用与版本，不静默截断验收条件。
+跨设备传递靠显式 Git commit/push/pull；本机授权和会话不传递。
+实时宿主验收与模拟 hooks 测试分开报告，详见 docs/verification.md。

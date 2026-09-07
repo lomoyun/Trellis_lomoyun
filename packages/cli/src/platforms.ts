@@ -1,24 +1,9 @@
-# Trellis Lite development
+import { context, json, nativeSession, object, type JsonObject } from "@trellis-lite/core";
 
-This repository implements the approved Lite fork in docs/implementation.md.
-Use one main agent by default. No prescribed thinking method, workflow phases,
-raw-chat retrieval, subprocess workers or public publishing.
+export const PLATFORMS = ["claude", "codex", "cursor", "opencode", "kilo", "kiro", "gemini", "antigravity", "devin", "qoder", "codebuddy", "copilot", "droid", "dsh", "pi", "reasonix", "zcode", "trae", "omp", "grok", "kimi", "snow"] as const;
+export const HOOK_PLATFORMS = ["claude", "codex", "cursor"];
 
-- Core owns task/storage/context/migration contracts; CLI owns args/templates/Git.
-- Read docs/contracts.md before changing persistence or integration contracts.
-- Retain unknown task metadata and all user attachments during migration.
-- Use relative POSIX paths and LF-normalized content revisions.
-- Never overwrite user edits silently. Mutations use atomic writes and a lock.
-- Read-only/native plan mode must have no persistence or Git side effects.
-- Run pnpm lint, pnpm typecheck, pnpm test and the packed CLI smoke test.
-- Distinguish test evidence, live-host acceptance, task done, commit and push.
-- Preserve LICENSE, COPYRIGHT and upstream commit provenance.
-
-Use the shared Task / PRD / Plan / per-session Trace model for project history.
-Record decisions and verification outcomes, not private reasoning or raw chats.
-
-<!-- TRELLIS-LITE:START -->
-# Trellis Lite
+export const ENTRY = `# Trellis Lite
 
 Use one main agent. Trellis stores shared project intent and evidence; it does
 not prescribe thinking methods, spawn workers, read raw chats or run a daemon.
@@ -53,4 +38,24 @@ Auto-commit is off until the human grants a local policy; shared config is not
 authorization. Never grant it for yourself. Never auto-push. Use tll --help for
 the current CLI contract. If tll is unavailable, read/edit these same Markdown
 files in write mode and disclose that checkpoints have not yet been recorded.
-<!-- TRELLIS-LITE:END -->
+`;
+
+export function platformReport(): JsonObject {
+  return { schemaVersion: 1, platforms: PLATFORMS.map((id) => ({ id, fallback: "shared-entry/manual-context", hooks: HOOK_PLATFORMS.includes(id) ? "opt-in-session-start" : "not-installed", liveHostVerified: false })) };
+}
+
+export function hookConfig(platform: string): { path: string; event: string; item: JsonObject } {
+  const command = `tll hook --platform ${platform}`;
+  if (platform === "cursor") return { path: ".cursor/hooks.json", event: "sessionStart", item: { command } };
+  return { path: platform === "claude" ? ".claude/settings.json" : ".codex/hooks.json", event: "SessionStart", item: { hooks: [{ type: "command", command, timeout: 10 }] } };
+}
+
+/** 只读：宿主模式未知时也不创建会话、不持久化 native ID。 */
+export function hookOutput(root: string, platform: string, input: unknown): JsonObject {
+  const data = object(input);
+  const nativeId = typeof data.session_id === "string" ? data.session_id : undefined;
+  const session = nativeId ? nativeSession(root, platform, nativeId) : undefined;
+  const content = `${ENTRY}\n${json(context(root, { session }))}`;
+  if (platform === "cursor") return { additional_context: content };
+  return { hookSpecificOutput: { hookEventName: "SessionStart", additionalContext: content } };
+}

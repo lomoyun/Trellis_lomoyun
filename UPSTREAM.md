@@ -15,9 +15,9 @@ Do not merge workflow, channel or sub-agent machinery automatically.
 | --- | --- | --- |
 | 88f4834449da9b4f607ec05e322408a0aa66f2ce | Baseline | Trellis 0.6.16 source |
 
-The planned Lite CLI must never fetch upstream. Repository maintenance is a
-separate, explicit developer operation. The inherited publishing configuration
-has not yet been removed; disabling it is part of the implementation plan.
+The Lite CLI never fetches upstream. Repository maintenance is a separate,
+explicit developer operation. Both packages are private; inherited publishing
+workflows and release scripts have been removed from the active tree.
 
 ## Independent repository
 

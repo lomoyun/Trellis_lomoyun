@@ -9,19 +9,20 @@ user intent. No automated push in the product.
 
 - [x] Create independent local Git repository retaining upstream history.
 - [x] Configure the personal origin and verify its main branch matches the baseline.
-- [ ] Implement typed storage, quick/standard tasks, revisions and trace.
-- [ ] Implement context, session bindings and evidence-based handoff.
-- [ ] Implement thin platform adapters and scoped auto-commit authorization.
-- [ ] Implement reversible legacy migration and managed template updates.
-- [ ] Remove old runtime, templates and publishing workflows from active tree.
-- [ ] Run lint, typecheck, tests and packed CLI smoke checks.
+- [x] Implement typed storage, quick/standard tasks, revisions and trace.
+- [x] Implement context, session bindings and evidence-based handoff.
+- [x] Implement thin platform adapters and scoped auto-commit authorization.
+- [x] Implement reversible legacy migration and managed template updates.
+- [x] Remove old runtime, templates and publishing workflows from active tree.
+- [x] Run final lint, typecheck, tests and packed CLI smoke checks after review fixes.
 - [ ] Push verified changes to the explicitly requested personal remote.
 
 ## Repository bootstrap delivery
 
-This initial delivery records the independent repository and accepted scope
-only. Runtime implementation, migration, tests and template pruning remain
-pending. Publishing this tracker does not constitute delivery of Lite.
+The initial bootstrap commit recorded scope only. Implementation now lives in
+packages/core/src and packages/cli/src. The current work includes executable
+task, trace, context, session, native-tool advice, migration, template and scoped
+commit behavior. Live host verification is separate from local test delivery.
 
 ## Contracts
 

@@ -1,7 +1,10 @@
-// Root barrel — re-exports the channel and task public APIs so callers
-// can `import { ... } from "@mindfoldhq/trellis-core"`. Sub-path
-// imports (`@mindfoldhq/trellis-core/channel`, `/task`) remain the
-// recommended form for tree-shake-friendly consumption.
-
-export * from "./channel/index.js";
-export * from "./task/index.js";
+export * from "./model.js";
+export * from "./files.js";
+export * from "./transactions.js";
+export * from "./tasks.js";
+export * from "./trace.js";
+export * from "./sessions.js";
+export * from "./context.js";
+export * from "./native.js";
+export * from "./migration.js";
+export * from "./config.js";
