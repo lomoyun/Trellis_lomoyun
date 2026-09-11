@@ -26,3 +26,17 @@ source checkout at `E:/projects/Trellis_lomoyun`. Its `origin` is
 https://github.com/lomoyun/Trellis_lomoyun.git; `upstream` remains the original
 project for explicit maintenance only. The fork retains history rather than
 starting an unrelated root commit.
+
+## Branch roles
+
+`main` mirrors `mindfold-ai/trellis:main`; keep TLL-specific commits off this
+branch. On 2026-09-11 it was aligned to upstream commit
+`6d2008d4d3a53478b4ec328bcb559848991024a2`.
+
+`tll-lite` is the TLL development branch, tracking `origin/tll-lite`. It retains
+all four custom commits through `a6329227291a01997fd1295e409f558cb66cb819`
+and the shared task/evidence history. Continue TLL development on this branch;
+review upstream changes separately before selectively adopting them here.
+
+Future upstream synchronization is an explicit Git maintenance operation; no
+automatic sync or push is configured.
