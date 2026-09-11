@@ -9,14 +9,14 @@ export function attributeFiles(root: string, session: Session, files: string[]):
   const attribution: Attribution = { baseHead: gitHead(root), files: {} };
   for (const name of files) {
     const key = relativeKey(name);
-    if (key.startsWith(".trellis/")) continue;
+    if (key.startsWith(".tll/")) continue;
     attribution.files[key] = { clean: git(root, ["status", "--porcelain", "--", key]) === "" || readText(root, key) === null };
   }
   withLock(root, "project", () => writeAtomic(root, attributionPath(session.id), json(attribution)));
 }
 
 function attributionPath(session: string): string {
-  return `.trellis/.local/attribution/${safeName(session)}.json`;
+  return `.tll/.local/attribution/${safeName(session)}.json`;
 }
 
 function codeFiles(root: string, session: Session, requested: string[]): string[] | null {
@@ -27,7 +27,7 @@ function codeFiles(root: string, session: Session, requested: string[]): string[
   if (data.baseHead !== gitHead(root)) return null;
   const files = object(data.files);
   const keys = requested.map(relativeKey);
-  return keys.every((key) => !key.startsWith(".trellis/") && object(files[key]).clean === true) ? keys : null;
+  return keys.every((key) => !key.startsWith(".tll/") && object(files[key]).clean === true) ? keys : null;
 }
 
 function snapshotMatches(root: string, event: TraceEvent): boolean {
@@ -47,13 +47,13 @@ function commitFiles(root: string, files: string[], event: TraceEvent): CommitRe
     return { status: "committed", commit: gitHead(root) ?? undefined, files };
   } catch (error) {
     // 保留记录和已暂存文件；重试凭据只认可本次路径和字节。
-    writeAtomic(root, `.trellis/.local/commit-retries/${event.id}.json`, json({ files: before }));
+    writeAtomic(root, `.tll/.local/commit-retries/${event.id}.json`, json({ files: before }));
     return { status: "failed", reason: String(error), files };
   }
 }
 
 function retryOwnIndex(root: string, event: TraceEvent, staged: string[]): boolean {
-  const raw = readText(root, `.trellis/.local/commit-retries/${event.id}.json`);
+  const raw = readText(root, `.tll/.local/commit-retries/${event.id}.json`);
   if (raw === null) return false;
   const files = object(object(JSON.parse(raw)).files);
   return staged.every((key) => key in files && readText(root, key) === files[key] && git(root, ["diff", "--name-only", "--", key]) === "");
@@ -70,7 +70,7 @@ export function autoCommit(root: string, event: TraceEvent, options: { session: 
       if (!snapshotMatches(root, event)) return { status: "skipped", reason: "Task changed after checkpoint" };
       const code = policy.scope === "task" ? codeFiles(root, options.session, options.files ?? []) : [];
       if (code === null) return { status: "skipped", reason: "Code ownership is ambiguous or base HEAD changed" };
-      const trace = `.trellis/tasks/${event.task}/trace/${event.session}.jsonl`;
+      const trace = `.tll/tasks/${event.task}/trace/${event.session}.jsonl`;
       const files = [...Object.keys(event.snapshots), trace, ...code];
       if (event.type === "handoff") files.push(handoffPath(event));
       return commitFiles(root, files, event);

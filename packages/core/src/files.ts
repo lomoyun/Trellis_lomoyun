@@ -88,10 +88,11 @@ export function entries(root: string, key: string): fs.Dirent[] {
 }
 
 export function withLock<T>(root: string, name: string, action: () => T): T {
-  const ignoreKey = ".trellis/.gitignore";
+  assertNamespace(root);
+  const ignoreKey = ".tll/.gitignore";
   const ignored = readText(root, ignoreKey) ?? "";
   if (!ignored.split(/\r?\n/).includes("/.local/")) writeAtomic(root, ignoreKey, `${ignored.trimEnd()}\n/.local/\n`.trimStart());
-  const key = `.trellis/.local/locks/${safeName(name)}.lock`;
+  const key = `.tll/.local/locks/${safeName(name)}.lock`;
   const target = filePath(root, key);
   fs.mkdirSync(path.dirname(target), { recursive: true });
   let descriptor: number;
@@ -108,4 +109,8 @@ export function withLock<T>(root: string, name: string, action: () => T): T {
     fs.closeSync(descriptor);
     fs.unlinkSync(target);
   }
+}
+
+export function assertNamespace(root: string): void {
+  if (fs.existsSync(filePath(root, ".trellis"))) throw new LiteError("MIGRATION_REQUIRED", "Old .trellis directory exists; stop old agents and run tll migrate --rename-directory --dry-run, then --apply");
 }

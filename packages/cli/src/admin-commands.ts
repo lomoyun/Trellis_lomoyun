@@ -1,17 +1,22 @@
 import fs from "node:fs";
 import { Command } from "commander";
-import { applyMigration, createSession, nativeAdvice, planMigration, recover, requiredText } from "@trellis-lite/core";
+import { applyMigration, createSession, directoryMigration, nativeAdvice, planMigration, recover, requiredText } from "@trellis-lite/core";
 import { grantPolicy, readPolicy, revokePolicy } from "./policy.js";
-import { actor, inputFile, runtime, wrap, writable } from "./runtime.js";
+import { actor, defaultUser, inputFile, runtime, wrap, writable } from "./runtime.js";
 import { hookOutput, platformReport } from "./platforms.js";
 import { install } from "./templates.js";
 
 export function adminCommands(program: Command): void {
-  for (const command of ["init", "update"]) program.command(command).option("--platforms <ids>", "Comma-separated platform IDs").option("--hooks", "Install opt-in session-start hooks").option("--dry-run").action((options) => wrap(() => {
-    const env = runtime(program);
-    if (!options.dryRun) writable(env);
-    return install(env.root, { platforms: options.platforms?.split(","), hooks: options.hooks, dryRun: options.dryRun });
-  }));
+  for (const name of ["init", "update"]) {
+    const command = program.command(name).option("--platforms <ids>", "Comma-separated platform IDs").option("--hooks", "Install opt-in session-start hooks").option("--dry-run");
+    if (name === "init") command.option("-u, --user <name>", "Register local user (default: existing registration, then Git user.name)");
+    command.action((options) => wrap(() => {
+      const env = runtime(program);
+      if (!options.dryRun) writable(env);
+      const user = name === "init" ? requiredText(options.user ?? defaultUser(env.root), "--user").trim() : undefined;
+      return install(env.root, { platforms: options.platforms?.split(","), hooks: options.hooks, dryRun: options.dryRun, user });
+    }));
+  }
   program.command("platforms").action(() => wrap(platformReport));
   program.command("native").requiredOption("--input <file>").action((options) => wrap(() => nativeAdvice(inputFile(options.input))));
   program.command("hook").action(() => wrap(() => {
@@ -25,8 +30,13 @@ export function adminCommands(program: Command): void {
 }
 
 function migrationCommands(program: Command): void {
-  program.command("migrate").option("--dry-run").option("--apply").action((options) => wrap(() => {
+  program.command("migrate").option("--dry-run").option("--apply").option("--rename-directory", "First rename .trellis to .tll with all old agents stopped").action((options) => wrap(() => {
     const env = runtime(program);
+    if (options.renameDirectory) {
+      const apply = options.apply === true && !options.dryRun;
+      if (apply) writable(env);
+      return directoryMigration(env.root, apply);
+    }
     const plan = planMigration(env.root);
     if (!options.apply || options.dryRun) return plan;
     writable(env);

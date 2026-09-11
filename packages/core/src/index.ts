@@ -8,3 +8,5 @@ export * from "./context.js";
 export * from "./native.js";
 export * from "./migration.js";
 export * from "./config.js";
+export * from "./namespace.js";
+export * from "./users.js";

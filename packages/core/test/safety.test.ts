@@ -15,8 +15,8 @@ it.each(["../outside", "a/../../outside", "C:/outside", "//server/share", ".git/
 it("rejects symlink/junction escape without changing the target", () => {
   const outside = fs.mkdtempSync(path.join(os.tmpdir(), "tll-outside-"));
   try {
-    fs.mkdirSync(path.join(root, ".trellis"));
-    fs.symlinkSync(outside, path.join(root, ".trellis/tasks"), "junction");
+    fs.mkdirSync(path.join(root, ".tll"));
+    fs.symlinkSync(outside, path.join(root, ".tll/tasks"), "junction");
     expect(() => createTask(root, { title: "escape", actor: "alice" })).toThrow("Symlink refused");
     expect(fs.readdirSync(outside)).toEqual([]);
   } finally { fs.rmSync(outside, { recursive: true, force: true }); }
@@ -32,10 +32,10 @@ it("keeps state files intact on invalid schema and refuses an altered identity",
 });
 
 it("uses the configured context budget without writing local state", () => {
-  writeAtomic(root, ".trellis/config.yaml", "schemaVersion: 1\nproduct: trellis-lite\ncontextBudget: 1024\n");
-  writeAtomic(root, ".trellis/project.md", "x".repeat(10000));
+  writeAtomic(root, ".tll/config.yaml", "schemaVersion: 1\nproduct: tll\ncontextBudget: 1024\n");
+  writeAtomic(root, ".tll/project.md", "x".repeat(10000));
   expect(context(root).sections[0].omitted).toContain("Budget");
-  expect(fs.existsSync(path.join(root, ".trellis/.local"))).toBe(false);
+  expect(fs.existsSync(path.join(root, ".tll/.local"))).toBe(false);
 });
 
 it("treats re-ordered JSON fields as the same idempotent request", () => {

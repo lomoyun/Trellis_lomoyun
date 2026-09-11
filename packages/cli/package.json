@@ -5,7 +5,6 @@
   "type": "module",
   "description": "Lightweight coding-agent project context",
   "bin": {
-    "trellis-lite": "./bin/tll.js",
     "tll": "./bin/tll.js"
   },
   "files": [

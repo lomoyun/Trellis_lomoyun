@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 import { afterEach, beforeEach, expect, it } from "vitest";
 import { readText, writeAtomic } from "@trellis-lite/core";
 import { git } from "../src/git.js";
+import { ENTRY, HOOK_PLATFORMS } from "../src/platforms.js";
 
 const bin = fileURLToPath(new URL("../bin/tll.js", import.meta.url));
 let root: string;
@@ -22,16 +23,17 @@ function run(args: string[], input?: unknown): { status: number | null; data: Re
   return { status: result.status, data: result.stdout ? JSON.parse(result.stdout) : {}, output: result.stdout + result.stderr };
 }
 
-function files(directory = root): string[] {
+function files(directory = root, includeLocal = false): string[] {
   return fs.readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
-    if (entry.name === ".git" || entry.name === ".local") return [];
+    if (entry.name === ".git" || (!includeLocal && entry.name === ".local")) return [];
     const full = path.join(directory, entry.name);
-    return entry.isDirectory() ? files(full) : [path.relative(root, full).replace(/\\/g, "/")];
+    return entry.isDirectory() ? files(full, includeLocal) : [path.relative(root, full).replace(/\\/g, "/")];
   });
 }
 
 it("installs at most five shared files and updates idempotently", () => {
   expect(run(["init"]).status).toBe(0);
+  expect(readText(root, "AGENTS.md")).toContain(ENTRY);
   expect(files().length).toBeLessThanOrEqual(5);
   expect(files().reduce((sum, key) => sum + Buffer.byteLength(readText(root, key) ?? ""), 0)).toBeLessThanOrEqual(30 * 1024);
   expect(run(["update", "--dry-run"]).data.changes).toEqual([]);
@@ -52,10 +54,15 @@ it("preserves custom AGENTS and hook entries without installing subagents", () =
 it("hooks are read-only and return host-specific context", () => {
   run(["init"]);
   const before = git(root, ["status", "--porcelain", "--untracked-files=all"]);
-  for (const platform of ["claude", "codex", "cursor"]) {
+  const snapshot = () => Object.fromEntries(files(root, true).map((key) => [key, fs.readFileSync(path.join(root, key)).toString("base64")]));
+  const state = snapshot();
+  for (const platform of HOOK_PLATFORMS) {
     const result = run(["--platform", platform, "hook"], { session_id: "native-session", permission_mode: "plan" });
     expect(result.status).toBe(0);
-    expect(result.data).toHaveProperty(platform === "cursor" ? "additional_context" : "hookSpecificOutput.additionalContext");
+    const hook = result.data.hookSpecificOutput as { additionalContext: string } | undefined;
+    const content = platform === "cursor" ? result.data.additional_context : hook?.additionalContext;
+    expect(String(content).startsWith(ENTRY)).toBe(true);
+    expect(snapshot()).toEqual(state);
   }
   expect(git(root, ["status", "--porcelain", "--untracked-files=all"])).toBe(before);
 });
@@ -66,6 +73,20 @@ it("blocks all mutations in plan/read-only mode", () => {
   expect(run(["--read-only", "task", "new", "Must not exist"]).data).toHaveProperty("error.code", "READ_ONLY");
   expect(run(["--read-only", "session", "new"]).data).toHaveProperty("error.code", "READ_ONLY");
   expect(files()).toEqual(before);
+  expect(fs.existsSync(path.join(root, ".tll"))).toBe(false);
+});
+
+it("exposes explicit directory migration and keeps its preview and plan mode read-only", () => {
+  writeAtomic(root, ".trellis/config.yaml", "schemaVersion: 1\nproduct: trellis-lite\n");
+  expect(run(["init"]).data).toHaveProperty("error.code", "MIGRATION_REQUIRED");
+  expect(run(["task", "list"]).data).toHaveProperty("error.code", "MIGRATION_REQUIRED");
+  expect(run(["migrate", "--rename-directory", "--dry-run"]).data.applied).toBe(false);
+  expect(run(["--read-only", "migrate", "--rename-directory", "--apply"]).data).toHaveProperty("error.code", "READ_ONLY");
+  expect(fs.existsSync(path.join(root, ".tll"))).toBe(false);
+  expect(run(["migrate", "--rename-directory", "--apply"]).data.applied).toBe(true);
+  expect(run(["migrate", "--apply"]).status).toBe(0);
+  expect(run(["init"]).status).toBe(0);
+  expect(run(["context"]).status).toBe(0);
   expect(fs.existsSync(path.join(root, ".trellis"))).toBe(false);
 });
 
@@ -92,5 +113,5 @@ it("runs task/new/start/import/checkpoint/handoff/finish from built CLI", () => 
   }
   expect(run([...base, "task", "finish", "demo", "--expect", String(imported.data.revision), "--summary", "Complete", "--key", "finish"]).status).toBe(0);
   expect(run(["task", "show", "demo"]).data).toHaveProperty("meta.status", "done");
-  expect(files().some((file) => file.startsWith(".trellis/workspace/") && file.endsWith(".md"))).toBe(true);
+  expect(files().some((file) => file.startsWith(".tll/workspace/") && file.endsWith(".md"))).toBe(true);
 }, 30_000);

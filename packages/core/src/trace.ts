@@ -59,7 +59,7 @@ export function checkpoint(root: string, id: string, options: { session: Session
 }
 
 export function handoffPath(event: TraceEvent): string {
-  return `.trellis/workspace/${hash(event.actor.human).slice(0, 16)}/${event.session}/${event.id}.md`;
+  return `.tll/workspace/${hash(event.actor.human).slice(0, 16)}/${event.session}/${event.id}.md`;
 }
 
 export function handoffText(event: TraceEvent): string {

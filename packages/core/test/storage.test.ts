@@ -97,7 +97,7 @@ describe("recovery", () => {
     });
     expect(() => expandTask(root, task.meta.id, task.revision)).toThrow("simulated crash");
     vi.restoreAllMocks();
-    const directory = path.join(root, ".trellis/.local/transactions");
+    const directory = path.join(root, ".tll/.local/transactions");
     const pending = fs.readdirSync(directory).map((name) => JSON.parse(fs.readFileSync(path.join(directory, name), "utf8"))).find((tx) => tx.state === "pending");
     expect(pending).toBeDefined();
     recover(root, pending.id);

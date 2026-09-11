@@ -39,6 +39,6 @@ it("serializes independent processes appending to the same session trace", async
 });
 
 it("does not steal a lock just because its timestamp is old", async () => {
-  writeAtomic(root, ".trellis/.local/locks/project.lock", '{"pid":1,"at":"2000-01-01"}');
+  writeAtomic(root, ".tll/.local/locks/project.lock", '{"pid":1,"at":"2000-01-01"}');
   expect(() => createTask(root, { title: "No", actor: "alice" })).toThrow("another writer");
 });

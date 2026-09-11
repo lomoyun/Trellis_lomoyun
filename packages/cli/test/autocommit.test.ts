@@ -2,9 +2,9 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { beforeEach, afterEach, expect, it } from "vitest";
-import { bindSession, checkpoint, createSession, createTask, readTrace, writeAtomic, type Session, type TraceEvent } from "@trellis-lite/core";
+import { bindSession, checkpoint, createSession, createTask, hash, json, readTrace, writeAtomic, type Session, type TraceEvent } from "@trellis-lite/core";
 import { autoCommit, attributeFiles } from "../src/autocommit.js";
-import { git, gitHead, stagedPaths } from "../src/git.js";
+import { git, gitHead, gitIdentity, stagedPaths } from "../src/git.js";
 import { grantPolicy, revokePolicy } from "../src/policy.js";
 import { install } from "../src/templates.js";
 
@@ -19,7 +19,7 @@ beforeEach(() => {
   install(root);
   const task = createTask(root, { id: "demo", title: "Task", actor: "Alice" });
   session = bindSession(root, createSession(root, { human: "Alice", platform: "codex" }).id, "demo");
-  git(root, ["add", "--", "AGENTS.md", ".trellis"]);
+  git(root, ["add", "--", "AGENTS.md", ".tll"]);
   git(root, ["commit", "-qm", "fixture"]);
   event = checkpoint(root, "demo", { session, input: { schemaVersion: 1, key: "first", type: "checkpoint", summary: "First checkpoint", expectedRevision: task.revision } });
 });
@@ -38,12 +38,18 @@ it("is off by default and revocation disables commits", () => {
   expect(gitHead(root)).toBe(head);
 });
 
+it("does not inherit pre-TLL auto-commit grants after a directory rename", () => {
+  writeAtomic(root, `.tll/.local/policies/${hash(gitIdentity(root))}.json`, json({ schemaVersion: 1, identity: gitIdentity(root), scope: "task", duration: "repo-user", grantedAt: "before-rename" }));
+  expect(autoCommit(root, event, { session }).status).toBe("off");
+  expect(stagedPaths(root)).toEqual([]);
+});
+
 it("commits only this task's records, never unrelated work or local permissions", () => {
   authorize();
   writeAtomic(root, "unrelated.txt", "user work");
   expect(autoCommit(root, event, { session }).status).toBe("committed");
-  expect(git(root, ["show", "--pretty=format:", "--name-only", "HEAD"])).toBe(`.trellis/tasks/demo/trace/${session.id}.jsonl`);
-  expect(git(root, ["ls-files", ".trellis/.local"])).toBe("");
+  expect(git(root, ["show", "--pretty=format:", "--name-only", "HEAD"])).toBe(`.tll/tasks/demo/trace/${session.id}.jsonl`);
+  expect(git(root, ["ls-files", ".tll/.local"])).toBe("");
   expect(git(root, ["status", "--porcelain"])).toContain("unrelated.txt");
 });
 

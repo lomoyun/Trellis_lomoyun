@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { Command } from "commander";
-import { LiteError, json, object, readSession, requiredText, type JsonObject, type Session } from "@trellis-lite/core";
+import { LiteError, json, object, readLocalUser, readSession, requiredText, type JsonObject, type Session } from "@trellis-lite/core";
 import { git } from "./git.js";
 
 export interface Runtime { root: string; session?: string; actor?: string; platform: string; readOnly: boolean }
@@ -20,7 +20,14 @@ export function session(env: Runtime): Session {
 }
 
 export function actor(env: Runtime): string {
-  return env.actor ?? (env.session ? session(env).actor.human : git(env.root, ["config", "user.name"]));
+  return env.actor ?? (env.session ? session(env).actor.human : defaultUser(env.root));
+}
+
+export function defaultUser(root: string): string {
+  const registered = readLocalUser(root);
+  if (registered !== undefined) return registered;
+  try { return requiredText(git(root, ["config", "user.name"]), "Git user.name").trim(); }
+  catch { throw new LiteError("USER_REQUIRED", "Set a user with tll init -u <name> or configure git config user.name"); }
 }
 
 export function inputFile(file: string): JsonObject {

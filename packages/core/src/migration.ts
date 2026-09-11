@@ -3,6 +3,7 @@ import { hash, json, readText, relativeKey, withLock } from "./files.js";
 import { listTasks, taskFiles } from "./tasks.js";
 import { LiteError, object } from "./model.js";
 import { readConfig } from "./config.js";
+import { stringify } from "yaml";
 
 export interface MigrationPlan {
   schemaVersion: 1;
@@ -28,17 +29,19 @@ export function planMigration(root: string): MigrationPlan {
   }
   plan.changes.push(...legacyConfig(root));
   cleanManagedEntries(root, plan);
-  plan.warnings.push("Archived tasks, research, attachments, specs and developer journals are preserved. Native bindings and auto-commit permissions are not inherited.");
+  plan.warnings.push("Archived tasks, research, attachments, specs and developer journals are preserved. Existing Lite sessions remain local; create new sessions for new windows/devices. Pre-TLL auto-commit grants are not inherited.");
   return plan;
 }
 
 function legacyConfig(root: string): Change[] {
-  const content = readText(root, ".trellis/config.yaml");
-  if (content === null || readConfig(root)?.product === "trellis-lite") return [];
-  const history = ".trellis/history/legacy-config.yaml";
+  const content = readText(root, ".tll/config.yaml");
+  const config = readConfig(root);
+  if (content === null || config?.product === "tll") return [];
+  const history = ".tll/history/legacy-config.yaml";
   const existing = readText(root, history);
   if (existing !== null && existing !== content) throw new LiteError("CONFLICT", `${history} already exists`);
-  return changesFor(root, { [history]: content, ".trellis/config.yaml": "schemaVersion: 1\nproduct: trellis-lite\ncontextBudget: 16384\nautoCommit: off\n" });
+  const next = config?.product === "trellis-lite" ? stringify({ ...config, product: "tll", autoCommit: "off" }) : "schemaVersion: 1\nproduct: tll\ncontextBudget: 16384\nautoCommit: off\n";
+  return changesFor(root, { [history]: content, ".tll/config.yaml": next });
 }
 
 function cleanManagedEntries(root: string, plan: MigrationPlan): void {
@@ -48,13 +51,13 @@ function cleanManagedEntries(root: string, plan: MigrationPlan): void {
   }
   for (const key of [".claude/settings.json", ".codex/hooks.json", ".cursor/hooks.json"]) scrubHooks(root, key, plan);
   scrubPiExtensions(root, plan);
-  const manifest = readText(root, ".trellis/.template-hashes.json");
+  const manifest = readText(root, ".tll/.template-hashes.json");
   if (manifest === null) { plan.warnings.push("No legacy ownership manifest: custom or unproven files are not deleted. Review remaining old skills/hooks manually."); return; }
   const raw = object(JSON.parse(manifest));
   const hashes = object(raw.hashes ?? raw);
   for (const [rawKey, expected] of Object.entries(hashes)) {
     if (typeof expected !== "string") continue;
-    const key = relativeKey(rawKey);
+    const key = relativeKey(rawKey).replace(/^\.trellis\//, ".tll/");
     if (!isLegacyRuntime(key)) {
       if (/^\.[^/]+\/(?:skills|agents|hooks|commands|plugins|extensions|workflows|droids|prompts)\//.test(key) && readText(root, key) !== null) {
         const message = `Manual platform detachment required: ${key.split("/")[0]}`;
@@ -70,7 +73,7 @@ function cleanManagedEntries(root: string, plan: MigrationPlan): void {
 }
 
 function isLegacyRuntime(key: string): boolean {
-  return key === ".codex/config.toml" || key.startsWith(".trellis/scripts/") || key.startsWith(".trellis/agents/") || /^\.(?:agents|claude|codex|cursor|opencode|pi|omp)\/(?:skills|agents|hooks|commands|plugins|extensions)\//.test(key);
+  return key === ".codex/config.toml" || key.startsWith(".tll/scripts/") || key.startsWith(".tll/agents/") || /^\.(?:agents|claude|codex|cursor|opencode|pi|omp)\/(?:skills|agents|hooks|commands|plugins|extensions)\//.test(key);
 }
 
 function scrubPiExtensions(root: string, plan: MigrationPlan): void {

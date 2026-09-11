@@ -45,7 +45,7 @@ function applyChanges(root: string, changes: Change[]): void {
 export function transact(root: string, changes: Change[]): Transaction {
   validateChanges(root, changes, false);
   const tx: Transaction = { schemaVersion: 1, id: randomUUID(), state: "pending", changes };
-  const key = `.trellis/.local/transactions/${tx.id}.json`;
+  const key = `.tll/.local/transactions/${tx.id}.json`;
   writeAtomic(root, key, json(tx));
   try {
     applyChanges(root, changes);
@@ -58,12 +58,13 @@ export function transact(root: string, changes: Change[]): Transaction {
 }
 
 function readTransaction(root: string, id: string): Transaction {
-  const data = object(JSON.parse(readText(root, `.trellis/.local/transactions/${safeName(id)}.json`) ?? "null"));
+  const data = object(JSON.parse(readText(root, `.tll/.local/transactions/${safeName(id)}.json`) ?? "null"));
   if (data.schemaVersion !== 1 || data.id !== id || !Array.isArray(data.changes)) throw new LiteError("INVALID_DATA", "Invalid transaction");
   if (!["pending", "applied", "rolled-back"].includes(String(data.state))) throw new LiteError("INVALID_DATA", "Invalid transaction state");
   for (const value of data.changes) {
     const change = object(value);
     if (typeof change.path !== "string" || ![change.before, change.after].every((item) => item === null || typeof item === "string")) throw new LiteError("INVALID_DATA", "Invalid transaction change");
+    if (relativeKey(change.path).startsWith(".trellis/")) throw new LiteError("MIGRATION_REQUIRED", "Historical .trellis transaction is read-only after directory migration; do not replay old paths");
   }
   return data as unknown as Transaction;
 }
@@ -76,7 +77,7 @@ export function recover(root: string, id: string, rollback = false): Transaction
     validateChanges(root, changes, true);
     applyChanges(root, changes);
     tx.state = rollback ? "rolled-back" : "applied";
-    writeAtomic(root, `.trellis/.local/transactions/${tx.id}.json`, json(tx));
+    writeAtomic(root, `.tll/.local/transactions/${tx.id}.json`, json(tx));
     return tx;
   });
 }

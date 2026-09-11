@@ -10,12 +10,12 @@ afterEach(() => { fs.rmSync(root, { recursive: true, force: true }); });
 
 it("migrates legacy metadata and plan, preserves attachments and can roll back exact bytes", () => {
   const original = json({ title: "old", status: "in_progress", assignee: "alice", parent: "parent-task", unknown: 42 });
-  writeAtomic(root, ".trellis/tasks/old/task.json", original);
-  writeAtomic(root, ".trellis/tasks/old/prd.md", "## Acceptance\nKeep all data\n");
-  writeAtomic(root, ".trellis/tasks/old/implement.md", "- [ ] S1: Keep stable\n");
-  writeAtomic(root, ".trellis/tasks/old/research/note.md", "keep");
+  writeAtomic(root, ".tll/tasks/old/task.json", original);
+  writeAtomic(root, ".tll/tasks/old/prd.md", "## Acceptance\nKeep all data\n");
+  writeAtomic(root, ".tll/tasks/old/implement.md", "- [ ] S1: Keep stable\n");
+  writeAtomic(root, ".tll/tasks/old/research/note.md", "keep");
   const plan = planMigration(root);
-  expect(readText(root, ".trellis/tasks/old/task.json")).toBe(original);
+  expect(readText(root, ".tll/tasks/old/task.json")).toBe(original);
   const tx = applyMigration(root, plan);
   const task = readTask(root, "old");
   expect(task.format).toBe("standard");
@@ -25,14 +25,14 @@ it("migrates legacy metadata and plan, preserves attachments and can roll back e
   expect(task.plan).toBe("- [ ] S1: Keep stable\n");
   expect(planMigration(root).changes).toEqual([]);
   recover(root, tx.id, true);
-  expect(readText(root, ".trellis/tasks/old/task.json")).toBe(original);
-  expect(readText(root, ".trellis/tasks/old/research/note.md")).toBe("keep");
+  expect(readText(root, ".tll/tasks/old/task.json")).toBe(original);
+  expect(readText(root, ".tll/tasks/old/research/note.md")).toBe("keep");
 });
 
 it("refuses conflicting plans without writing files", () => {
-  writeAtomic(root, ".trellis/tasks/old/task.json", json({ title: "old" }));
-  writeAtomic(root, ".trellis/tasks/old/implement.md", "one");
-  writeAtomic(root, ".trellis/tasks/old/plan.md", "two");
+  writeAtomic(root, ".tll/tasks/old/task.json", json({ title: "old" }));
+  writeAtomic(root, ".tll/tasks/old/implement.md", "one");
+  writeAtomic(root, ".tll/tasks/old/plan.md", "two");
   const plan = planMigration(root);
   expect(plan.conflicts).toHaveLength(1);
   expect(() => applyMigration(root, plan)).toThrow("differ");
@@ -72,10 +72,10 @@ it("detaches the legacy Pi extension without touching custom extensions", () => 
 
 it("refuses to delete runtime dependencies when another platform still needs manual detachment", () => {
   writeAtomic(root, ".gemini/hooks/session-start.py", "custom host wrapper");
-  writeAtomic(root, ".trellis/scripts/context.py", "old runtime");
-  writeAtomic(root, ".trellis/.template-hashes.json", json({ __version: 2, hashes: { ".gemini/hooks/session-start.py": hash("custom host wrapper"), ".trellis/scripts/context.py": hash("old runtime") } }));
+  writeAtomic(root, ".tll/scripts/context.py", "old runtime");
+  writeAtomic(root, ".tll/.template-hashes.json", json({ __version: 2, hashes: { ".gemini/hooks/session-start.py": hash("custom host wrapper"), ".tll/scripts/context.py": hash("old runtime") } }));
   const plan = planMigration(root);
   expect(plan.conflicts).toContain("Manual platform detachment required: .gemini");
   expect(() => applyMigration(root, plan)).toThrow("Manual platform detachment");
-  expect(readText(root, ".trellis/scripts/context.py")).toBe("old runtime");
+  expect(readText(root, ".tll/scripts/context.py")).toBe("old runtime");
 });

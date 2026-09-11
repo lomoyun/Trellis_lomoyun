@@ -5,7 +5,7 @@ import { checkpointCommand, taskCommands } from "./task-commands.js";
 import { output, runtime, wrap } from "./runtime.js";
 
 export function cli(argv: string[]): void {
-  const program = new Command().name("tll").description("Trellis Lite: portable Task / PRD / Plan / Trace").version("0.1.0")
+  const program = new Command().name("tll").description("TLL: portable Task / PRD / Plan / Trace").version("0.1.0")
     .option("--root <directory>", "Project root (default: cwd)").option("--session <uuid>", "Local session UUID")
     .option("--actor <human>", "Human identity (default: Git user.name)").option("--platform <id>", "Host platform", "generic")
     .option("--read-only", "Disallow persistence in native plan mode").option("--json", "Versioned JSON output (the default)");

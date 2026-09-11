@@ -38,20 +38,44 @@ try {
   const installed = path.join(app, "node_modules/@trellis-lite/cli");
   const bin = path.join(installed, "bin/tll.js");
   function tll(args) { return JSON.parse(node([bin, "--root", project, ...args], app)); }
-  const init = tll(["init"]);
-  const sharedFiles = fs.readdirSync(path.join(project, ".trellis")).filter((name) => name !== ".local").length + 1;
+  const init = tll(["init", "-u", "smoke"]);
+  assert.equal(init.user, "smoke");
+  const sharedFiles = fs.readdirSync(path.join(project, ".tll")).filter((name) => name !== ".local").length + 1;
   assert.equal(sharedFiles, 5);
-  const task = tll(["--actor", "smoke", "task", "new", "Packed task", "--id", "packed"]);
+  const entry = fs.readFileSync(path.join(project, "AGENTS.md"), "utf8").replace(/\s+/g, " ");
+  for (const instruction of [
+    "Main agent owns delivery.",
+    "Every requested repository change belongs to a Task, including small edits",
+    "Minimal write lifecycle",
+    "Perform startup operations only when needed",
+    "Keep revision checks, not redundant reads",
+    "Default to direct execution",
+    "Subagents may implement/self-test but must not mutate TLL state, commit/push or delegate",
+    "Use gpt-5.6-sol / xhigh",
+    "if unavailable or unconfirmable, report once and continue with the main agent, without substitution",
+    "one final evidence checkpoint, then finish",
+    "Never store hidden reasoning, raw chat or secrets",
+    "Read-only work needs no Task lifecycle",
+    "Report implementation, verification, TLL status, commit and push separately",
+    "Never auto-push",
+  ]) assert(entry.includes(instruction), `Packed entry missing: ${instruction}`);
+  const task = tll(["task", "new", "Packed task", "--id", "packed"]);
   assert.equal(task.meta.id, "packed");
-  const session = tll(["--actor", "smoke", "session", "new"]);
+  assert.equal(task.meta.creator, "smoke");
+  assert(task.prd.includes("One independently deliverable outcome"));
+  const session = tll(["session", "new"]);
+  assert.equal(session.actor.human, "smoke");
   const started = tll(["--session", session.id, "task", "start", "packed", "--expect", task.revision]);
   const event = tll(["--session", session.id, "checkpoint", "packed", "--expect", started.task.revision, "--summary", "Packed CLI works", "--key", "packed-smoke"]);
   assert.equal(event.git.status, "off");
   assert.equal(tll(["context", "packed"]).task.id, "packed");
+  tll(["--session", session.id, "task", "finish", "packed", "--expect", started.task.revision, "--summary", "Packed delivery verified", "--key", "packed-finish"]);
+  assert.deepEqual(tll(["context"]).candidates, []);
+  assert.equal(tll(["context", "packed"]).task.status, "done");
   assert.deepEqual(tll(["update", "--dry-run"]).changes, []);
   const manifest = JSON.parse(fs.readFileSync(path.join(installed, "package.json"), "utf8"));
   assert.equal(manifest.dependencies["@trellis-lite/core"], "0.1.0");
-  console.log(JSON.stringify({ status: "passed", installMode: "prefer-offline", privateCoreOverride: true, sharedFiles, packed: packed.map((item) => ({ name: item.name, files: item.files.length })) }, null, 2));
+  console.log(JSON.stringify({ status: "passed", installMode: "prefer-offline", privateCoreOverride: true, sharedFiles, nativeDelegationGuidance: true, packed: packed.map((item) => ({ name: item.name, files: item.files.length })) }, null, 2));
 } finally {
   await fs.promises.rm(temp, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
 }

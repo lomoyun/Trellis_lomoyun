@@ -1,4 +1,4 @@
-# Trellis Lite
+# TLL
 
 Portable Task / PRD / Plan / per-session Trace for coding agents.
 Single main-agent workflow; no mandatory reasoning method or subagent runtime.

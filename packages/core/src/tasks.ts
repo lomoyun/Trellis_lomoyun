@@ -1,10 +1,10 @@
 import { randomUUID } from "node:crypto";
 import { parse, stringify } from "yaml";
-import { canonicalJson, entries, hash, json, normalize, readText, relativeKey, safeName, withLock } from "./files.js";
+import { assertNamespace, canonicalJson, entries, hash, json, normalize, readText, relativeKey, safeName, withLock } from "./files.js";
 import { LiteError, metadata, object, requiredText, type Task, type TaskMeta, type JsonObject } from "./model.js";
 import { changesFor, transact } from "./transactions.js";
 
-export const TASK_ROOT = ".trellis/tasks";
+export const TASK_ROOT = ".tll/tasks";
 const PLAN_MARKER = "\n<!-- tll:plan -->\n";
 
 export function taskDirectory(id: string): string {
@@ -31,6 +31,7 @@ function quickTask(text: string): { meta: TaskMeta; prd: string; plan: string } 
 }
 
 export function readTask(root: string, id: string): Task {
+  assertNamespace(root);
   return readTaskDirectory(root, taskDirectory(id));
 }
 
@@ -71,6 +72,7 @@ export function legacyMetadata(raw: JsonObject, dir: string): TaskMeta {
 }
 
 export function listTasks(root: string, archive = false): { tasks: Task[]; warnings: string[] } {
+  assertNamespace(root);
   const result: { tasks: Task[]; warnings: string[] } = { tasks: [], warnings: [] };
   function visit(dir: string): void {
     for (const entry of entries(root, dir)) {
@@ -102,7 +104,7 @@ export function createTask(root: string, input: NewTask): Task {
     if (entries(root, directory).length) throw new LiteError("CONFLICT", `Directory is not empty: ${directory}`);
     const now = new Date().toISOString();
     const meta: TaskMeta = { schemaVersion: 1, id, title: requiredText(input.title, "title"), creator: requiredText(input.actor, "actor"), owner: input.actor, status: "draft", createdAt: now, updatedAt: now };
-    const data = { directory, meta, format: input.format ?? "quick", prd: input.prd ?? `# ${input.title}\n\n## Goal\n\n## Scope\n\n## Acceptance\n\n`, plan: input.plan ?? "# Plan\n\n- [ ] S1: Describe the next step\n" };
+    const data = { directory, meta, format: input.format ?? "quick", prd: input.prd ?? `# ${input.title}\n\n## Goal\n\n<!-- One independently deliverable outcome, not a project-wide backlog. -->\n\n## Scope\n\n<!-- In scope: what this delivery includes. Out of scope: separate deliverables. -->\n\n## Acceptance\n\n<!-- Observable criteria for completing this outcome. -->\n\n## References\n\n<!-- Link related Task IDs, designs and evidence; do not copy their history. -->\n\n`, plan: input.plan ?? "# Plan\n\n- [ ] S1: Describe the next step\n" };
     transact(root, changesFor(root, taskFiles(data)));
     return readTask(root, id);
   });

@@ -4,7 +4,7 @@ import { LiteError, object, requiredText, type Actor, type Session } from "./mod
 import { readTask } from "./tasks.js";
 
 export function sessionPath(id: string): string {
-  return `.trellis/.local/sessions/${safeName(id)}.json`;
+  return `.tll/.local/sessions/${safeName(id)}.json`;
 }
 
 export function readSession(root: string, id: string): Session {
@@ -31,7 +31,7 @@ export function createSession(root: string, actor: Actor, nativeId?: string): Se
 }
 
 function nativePath(platform: string, nativeId: string): string {
-  return `.trellis/.local/native/${hash(`${platform}:${nativeId}`)}.json`;
+  return `.tll/.local/native/${hash(`${platform}:${nativeId}`)}.json`;
 }
 
 export function nativeSession(root: string, platform: string, nativeId: string): Session | undefined {
